@@ -4,38 +4,36 @@ from helpers import *
 import pandas as pd
 import tensorflow as tf
 import time
-from tensorflow.keras.preprocessing.text import text_to_word_sequence
+from keras.preprocessing.text import text_to_word_sequence
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import nltk
 from nltk.corpus import wordnet
 import gensim
-
+from multiprocessing import Pool
+import re
 from keras.preprocessing import sequence
 
 import pkg_resources
 from symspellpy.symspellpy import SymSpell
-
 from models import *
 
+ncpu = 2
+print("ncpu = ", ncpu)
 
-def correct_spelling(word_dataset):
-    sym_spell = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
-    dictionary_path = pkg_resources.resource_filename(
-        "symspellpy", "frequency_dictionary_en_82_765.txt")
-    bigram_path = pkg_resources.resource_filename(
-        "symspellpy", "frequency_bigramdictionary_en_243_342.txt")
-    # term_index is the column of the term and count_index is the
-    # column of the term frequency
-    sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
-    sym_spell.load_bigram_dictionary(bigram_path, term_index=0, count_index=2)
+
+def correct_spelling_p(tweet):
     # lookup suggestions for multi-word input strings (supports compound
     # splitting & merging)
-    for idx, tweet in enumerate(word_dataset):
-        # max edit distance per lookup (per single word, not per whole input string)
-        result = sym_spell.lookup_compound(tweet, max_edit_distance=2)
+    # max edit distance per lookup (per single word, not per whole input string)
+    # Remove numbers from strings
+    for i in range(10):
+        tweet = tweet.replace(str(i), '')
 
-        word_dataset[idx] = result[0].term
+    # Replace multiple spaces by one space
+    tweet = re.sub(' +',' ', tweet)
+    result = sym_spell.lookup_compound(tweet, max_edit_distance=2)
+    return result[0].term
 
 
 def correct_spelling_hashtag(word_dataset):
@@ -122,31 +120,32 @@ def find_words_not_in_vocab(model_gs, words_dataset):
         words_dataset[idx] = [w for w in tweet if w not in words_not_in_vocab]
 
 
+def lemmatize_p(tweet):
+    # filtered_data[idx] = [w for w in tweet if not w in stop_words]
+    lem_data= [lemmatizer.lemmatize(w, get_wordnet_pos(w)) for w in tweet]
 
-def lemmatize(data):
-    lem_data = [None] * len(data)
-    lemmatizer = WordNetLemmatizer()
-
-    for idx, tweet in enumerate(data):
-        # filtered_data[idx] = [w for w in tweet if not w in stop_words]
-        lem_data[idx] = [lemmatizer.lemmatize(w, get_wordnet_pos(w)) for w in tweet]
-
-    return np.asarray(lem_data)
+    return lem_data
 
 
-n = 1000
-
+n = 5000
+n_test = 100
+print("n = ", n)
 path_neg = 'data/twitter-datasets/train_neg.txt'
 path_pos = 'data/twitter-datasets/train_pos.txt'
+path_test = 'data/twitter-datasets/test_data.txt'
 
 data_neg = open_file(path_neg)
 data_pos = open_file(path_pos)
-
+test_data = open_file(path_test)
 t1 = time.time()
 
 data, labels = remove_not_unique_tweet_training(data_pos, data_neg)
+test_data = remove_not_unique_tweet_test(test_data)
+test_data = test_data[:n_test]
+
 
 data, labels = np.asarray(data), np.asarray(labels)
+test_data = np.asarray(test_data)
 
 perm_tot = np.random.permutation(labels.shape[0])
 data = data[perm_tot]
@@ -156,47 +155,91 @@ data_tmp = data[:n]
 
 # Correct spelling
 print("Start spelling correction")
-correct_spelling(data_tmp)
+sym_spell = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
+dictionary_path = pkg_resources.resource_filename("symspellpy", "frequency_dictionary_en_82_765.txt")
+bigram_path = pkg_resources.resource_filename("symspellpy", "frequency_bigramdictionary_en_243_342.txt")
+# term_index is the column of the term and count_index is the
+# column of the term frequency
+sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
+sym_spell.load_bigram_dictionary(bigram_path, term_index=0, count_index=2)
+
+t_s = time.time()
+
+
+with Pool(ncpu) as p:
+    data_tmp = p.map(correct_spelling_p, data_tmp)
+    test_data = p.map(correct_spelling_p, test_data)
+
+print("Duration:", time.time() - t_s, "s")
+
 
 data = [tweet.replace('\'', '') for tweet in data_tmp]
 data = [text_to_word_sequence(text, filters='!"$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n01234556789\'') for text in data]
 
+test_data = [tweet.replace('\'', '') for tweet in test_data]
+test_data = [text_to_word_sequence(text, filters='!"$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n01234556789\'')
+             for text in test_data]
+
+
 data = np.asarray(data)
+test_data = np.asarray(test_data)
 
 stop_words = list(stopwords.words('english'))
 stop_words.append('u')
 stop_words.append('ur')
 
 print("Start Lemmatization")
-lem_data = lemmatize(data[:n])
+t_s = time.time()
+
+lemmatizer = WordNetLemmatizer()
+
+with Pool(ncpu) as p:
+    lem_data = p.map(lemmatize_p, data)
+    lem_data_test = p.map(lemmatize_p, test_data)
+
+
+print("Time to lemmatize", time.time()-t_s, "s")
 
 # Max length of tweet
 len_max_tweet = np.max([len(tweet) for tweet in lem_data])
+len_max_tweet = np.max((len_max_tweet, np.max([len(tweet) for tweet in lem_data_test])))
+
+lem_data = np.asarray(lem_data)
+lem_data_test = np.asarray(lem_data_test)
+
+np.save('lem_data', lem_data)
+np.save('lem_data_test', lem_data_test)
 
 print("Time for preprocessing: ", time.time() - t1, "s")
 
 print("Start training Word2Vec")
 
 # Define gensim model
-size_w2v = 100
-model_gs = gensim.models.Word2Vec(lem_data, size=size_w2v, window=6, min_count=5, iter=10, workers=1)
+size_w2v = 150
+
+lem_data_tot = np.concatenate((lem_data, lem_data_test), axis=0)
+model_gs = gensim.models.Word2Vec(lem_data_tot, size=size_w2v, window=6, min_count=5, iter=10, workers=ncpu)
 
 find_words_not_in_vocab(model_gs, lem_data)
+find_words_not_in_vocab(model_gs, lem_data_test)
 
 # Convert words to vectors
 x = convert_w2v(model_gs, lem_data, size_w2v, len_max_tweet)
+x_test_real = convert_w2v(model_gs, lem_data_test, size_w2v, len_max_tweet)
 
 
 # Define neural network parameters
 filters, kernel_size, batch_size = 250, 5, 32
-epochs, hidden_dims = 20, 250
+epochs, hidden_dims = 10, 250
 
 model = build_model(filters, kernel_size, hidden_dims)
 
 # np stand for not padded
-x_train, y_train, x_test, y_test = split_data(x, labels[:n], ratio=0.8)
+x_train, y_train, x_test, y_test = split_data(x, labels[:n], ratio=1)
 
 model.fit(x_train, y_train,
           batch_size=batch_size,
-          epochs=epochs,
-          validation_data=(x_test, y_test))
+          epochs=epochs)
+
+y_pred = np.ndarray.flatten(model.predict_classes(x_test_real, batch_size=32))
+create_csv_submission(y_pred, 'csv_test1.csv')

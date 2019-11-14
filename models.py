@@ -1,10 +1,9 @@
 import gensim
 import numpy as np
-from tensorflow.keras.preprocessing import sequence
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Activation
-from tensorflow.keras.layers import Embedding
-from tensorflow.keras.layers import Conv1D, GlobalMaxPooling1D
+from keras.preprocessing import sequence
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation
+from keras.layers import Conv1D, GlobalMaxPooling1D
 
 
 def build_model(filters, kernel_size, hidden_dims):
@@ -26,11 +25,13 @@ def build_model(filters, kernel_size, hidden_dims):
 
 
 def convert_w2v(model_gs, data, size_w2v, len_max_tweet):
-
     x = np.empty((data.shape[0], len_max_tweet, size_w2v))
 
     for idx_t, tweet in enumerate(data):
-        vec = model_gs.wv[tweet]
-        x[idx_t, :, :] = np.transpose(sequence.pad_sequences(vec.T, maxlen=len_max_tweet, dtype=np.float32))
+        if len(tweet) == 0:
+            x[idx_t, :, :] = np.zeros_like(x[idx_t, :, :])
+        else:
+            vec = model_gs.wv[tweet]
+            x[idx_t, :, :] = np.transpose(sequence.pad_sequences(vec.T, maxlen=len_max_tweet, dtype=np.float32))
 
     return x
