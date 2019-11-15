@@ -24,14 +24,15 @@ def build_model(filters, kernel_size, hidden_dims):
     return model
 
 
-def convert_w2v(model_gs, data, size_w2v, len_max_tweet):
+def convert_w2v(model_wv, data, len_max_tweet):
+    size_w2v = model_wv.vector_size
     x = np.empty((data.shape[0], len_max_tweet, size_w2v))
 
     for idx_t, tweet in enumerate(data):
         if len(tweet) == 0:
             x[idx_t, :, :] = np.zeros_like(x[idx_t, :, :])
         else:
-            vec = model_gs.wv[tweet]
+            vec = model_wv[tweet]
             x[idx_t, :, :] = np.transpose(sequence.pad_sequences(vec.T, maxlen=len_max_tweet, dtype=np.float32))
 
     return x
