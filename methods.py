@@ -55,13 +55,6 @@ def correct_spelling_hashtag(word_dataset):
                 word_dataset[id_tweet][id_word:id_word] = parsed_hashtag
 
 
-def open_file(path):
-    f = open(path, "r", encoding="utf-8")
-    data = f.read().split('\n')
-    f.close()
-    return data
-
-
 def get_wordnet_pos(word):
     """Map POS tag to first character lemmatize() accepts"""
     tag = nltk.pos_tag([word])[0][1][0].upper()

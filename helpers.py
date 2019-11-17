@@ -1,6 +1,7 @@
 import numpy as np
 import csv
 
+
 def split_data(x, y, ratio, seed=1):
     """
     split the dataset based on the split ratio. If ratio is 0.8
@@ -37,3 +38,12 @@ def create_csv_submission(y_pred, name):
         for r1, r2 in zip(ids, y_pred):
             writer.writerow({'Id':int(r1), 'Prediction':int(r2)})
 
+
+def open_file(path):
+    f = open(path, "r", encoding="utf-8")
+    data = f.read().split('\n')
+    f.close()
+    # Remove last line if empty
+    if data[-1] == '':
+        data = data[:-1]
+    return data

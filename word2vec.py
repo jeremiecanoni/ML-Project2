@@ -17,7 +17,7 @@ else:
 
 t1 = time.time()
 
-lem_data = np.load('lem_data.npy')
+lem_data = np.load('Processed_Data/lem_data_nf.npy', allow_pickle=True)
 print(lem_data.shape)
 
 # Define gensim model
@@ -28,10 +28,10 @@ min_count = 5
 
 # Name to save the model afterwards
 path = 'w2v_models/'
-name = 'w2v_s' + str(size_w2v) + '_i' + str(iter_w2v) + '_w' + str(window) + '_mc' + str(min_count)
+name = 'w2v_nf_s' + str(size_w2v) + '_i' + str(iter_w2v) + '_w' + str(window) + '_mc' + str(min_count)
 
-model_gs = gensim.models.Word2Vec(lem_data, size=size_w2v, window=window, min_count=min_count, iter=iter_w2v, workers=ncpu)
-
+model_gs = gensim.models.Word2Vec(lem_data, size=size_w2v, window=window, min_count=min_count, iter=iter_w2v,
+                                  workers=ncpu)
 word_vector = model_gs.wv
 
 word_vector.save(path+name)
