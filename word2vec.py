@@ -11,18 +11,24 @@ if 'NUM_THREADSPROCESSES' in os.environ:
     print('ncpu = ', ncpu, flush=True)
 
 else:
-    ncpu = 2
+    ncpu = 3
     print("By default, ncpu = ", ncpu)
 
 
 t1 = time.time()
 
-lem_data = np.load('Processed_Data/lem_data_nf.npy', allow_pickle=True)
-print(lem_data.shape)
+lem_data = np.load('Processed_Data/data_train_pr_nf.npy', allow_pickle=True)
+
+lem_data_test = np.load('Processed_Data/data_test_pr.npy', allow_pickle=True)
+lem_data_tot = np.concatenate((lem_data, lem_data_test), axis=0)
+print(lem_data_tot.shape)
+
+perm = np.random.permutation(lem_data_tot.shape[0])
+lem_data_tot = lem_data_tot[perm]
 
 # Define gensim model
 size_w2v = 400
-iter_w2v = 5
+iter_w2v = 6
 window = 6
 min_count = 5
 
@@ -37,3 +43,4 @@ word_vector = model_gs.wv
 word_vector.save(path+name)
 
 print("Total time to train", time.time() - t1, "s")
+print("Name is:", name)
