@@ -5,7 +5,7 @@ from methods import *
 from multiprocessing import Pool
 import sys, os
 import gensim
-
+import gc
 
 # Do test also ?
 test = True
@@ -36,25 +36,25 @@ def find_words_not_in_vocab_p(tweet):
     corr_tweet = [w for w in tweet if w not in words_not_in_vocab]
     return corr_tweet
 
-
+full = 'nf'
 path_save = "converted_tweets/"
 
 path_w2v = 'w2v_models/'
-name_w2v = 'w2v_nf_s400_i5_w6_mc5'
+name_w2v = 'w2v_f_s400_i6_w6_mc4'
 word_vector = gensim.models.KeyedVectors.load(path_w2v + name_w2v)
 
 # Load processed data
 print("Loading Data ...", flush=True)
 path_pr = "Processed_Data/"
-data_train = np.load(path_pr + 'data_train_pr_nf.npy', allow_pickle=True)
-labels = np.load(path_pr + 'labels_train_nf.npy', allow_pickle=True)
+data_train = np.load(path_pr + 'data_train_pr_' + full + '.npy', allow_pickle=True)
+labels = np.load(path_pr + 'labels_train_' + full + '.npy', allow_pickle=True)
 data_test = np.load(path_pr + 'data_test_pr.npy', allow_pickle=True)
 
 # To train without the full set
 n_train = -1
 
 if n_train > 0:
-    lem_data = data_train[:n_train]
+    data_train = data_train[:n_train]
     labels = labels[:n_train]
 
 print("Removing word not in vocab", flush=True)
@@ -89,9 +89,12 @@ print("len_max_tweet:", len_max_tweet)
 final_text = np.asarray(final_text)
 final_text_test = np.asarray(final_text_test)
 
+perm = np.random.permutation(final_text.shape[0])
+final_text = final_text[perm]
+labels = labels[perm]
 
 n_tweet_train = final_text.shape[0]
-n_batch = 10
+n_batch = 5
 size_per_batch = int(np.floor(n_tweet_train/n_batch))
 
 print("Num of batches:", n_batch)
@@ -112,17 +115,27 @@ for b in range(n_batch):
 
 
     # Convert words to vec using multiprocessing
-    with Pool(ncpu, maxtasksperchild=5000) as p:
-        x = p.map(convert_w2v_p, final_text_b)
-
+    p=Pool(ncpu, maxtasksperchild=1000)
+    x = p.map(convert_w2v_p, final_text_b, chunksize=10000)
+   
+    p.close()
+    p.join()
+    del p
     x = np.asarray(x)
-
-    np.save(path_save + 'x_train_batch_' + str(b), x)
-    np.save(path_save + 'labels_batch_' + str(b), labels_b)
+    
+    print("x.shape", x.shape)
+    print("x.dtype", x.dtype)
+    np.save(path_save + 'labels_' + full + '_batch_' + str(b), labels_b)
+    np.savez_compressed(path_save + 'x_train_' + full + '_batch_' + str(b), x)
     #np.save(path_save + 'x_train_nf_1_b', x)
     #np.save(path_save + 'labels_nf_1_b', labels_b)
 
     x = None
+
+    del x
+    del labels_b
+    n_gc = gc.collect()
+    print("n_gc =", n_gc)
 
 
 print("Time to convert words into vec (train):", time.time()-t_w2v, "s")
@@ -134,6 +147,6 @@ if test:
 
     x_test_ai = np.asarray(x_test_ai)
 
-    np.save(path_save + 'x_test', x_test_ai)
+    np.save(path_save + 'x_test_' + full, x_test_ai)
 
 

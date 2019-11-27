@@ -1,15 +1,16 @@
 import gensim
 import numpy as np
+import keras
 from keras.preprocessing import sequence
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.layers import Conv1D, GlobalMaxPooling1D
 
 
-def build_model(filters, kernel_size, hidden_dims):
+def build_model(filters, kernel_size, hidden_dims, len_max_tweet):
 
     model = Sequential([
-        Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1),
+        Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1, input_shape=(len_max_tweet, 400)),
         GlobalMaxPooling1D(),
         Dense(hidden_dims),
         Dropout(0.2),
@@ -36,3 +37,93 @@ def convert_w2v(model_wv, data, len_max_tweet):
             x[idx_t, :, :] = np.transpose(sequence.pad_sequences(vec.T, maxlen=len_max_tweet, dtype=np.float32))
 
     return x
+
+
+class W2VGenerator(keras.utils.Sequence):
+
+    def __init__(self, data_names, labels_names, batch_size, n_samples_tot, shuffle=True):
+        super(W2VGenerator, self).__init__()
+
+        self.data_names = np.asarray(data_names)
+        self.labels_names = np.asarray(labels_names)
+        self.batch_size = batch_size
+        self.count = 0
+        self.n_samples_tot = n_samples_tot
+
+        if len(data_names) < 1 or len(self.labels_names) < 1:
+            raise "Wrong number of files"
+        else:
+
+            tmp = np.load(self.data_names[self.count], allow_pickle=True)
+            self.data = tmp['arr_0']
+            tmp.close()
+            self.labels = np.load(self.labels_names[self.count], allow_pickle=True)
+
+        self.n_samples = self.data.shape[0]
+        self.indexes = np.arange(self.n_samples)
+        self.n_batches = self.data.shape[0] // batch_size
+        self.shuffle = shuffle
+        self.ind = 0
+
+
+    def __len__(self):
+
+        #return (self.data_names.shape[0] - 1) * self.n_samples//self.batch_size \
+        #  + (self.n_samples_tot - self.n_samples_tot//self.data_names.shape[0])//self.batch_size
+        return int(self.n_samples_tot//self.batch_size)
+
+    def __getitem__(self, idx):
+
+        if self.ind < self.n_batches - 1:
+            indexes = self.indexes[self.ind * self.batch_size: (self.ind + 1) * self.batch_size]
+            self.ind = self.ind + 1
+
+            batch_x = self.data[indexes]
+            batch_y = self.labels[indexes]
+        else:
+            indexes = self.indexes[self.ind * self.batch_size:]
+            self.count = self.count + 1
+
+            batch_x = self.data[indexes]
+            batch_y = self.labels[indexes]
+
+            if self.count < len(self.data_names) - 1:
+                tmp = np.load(self.data_names[self.count], allow_pickle=True)
+                self.data = tmp['arr_0']
+                tmp.close()
+                self.labels = np.load(self.labels_names[self.count], allow_pickle=True)
+
+                # Permutations !
+                perm = np.random.permutation(self.data.shape[0])
+                self.data = self.data[perm]
+                self.labels = self.labels[perm]
+
+
+            self.n_samples = self.data.shape[0]
+            self.n_batches = self.data.shape[0] // self.batch_size
+            self.indexes = np.arange(self.n_samples)
+
+            self.ind = 0
+
+        return np.array(batch_x), np.array(batch_y)
+
+    def on_epoch_end(self):
+        # Updates indexes after each epoch
+        samples_idx = np.arange(self.data_names.shape[0])
+        self.count = 0
+
+        if self.shuffle:
+            np.random.shuffle(samples_idx)
+
+        self.data_names = self.data_names[samples_idx]
+        self.labels_names = self.labels_names[samples_idx]
+
+        tmp = np.load(self.data_names[self.count], allow_pickle=True)
+        self.data = tmp['arr_0']
+        tmp.close()
+        self.labels = np.load(self.labels_names[self.count], allow_pickle=True)
+
+        # Permutations !
+        perm = np.random.permutation(self.data.shape[0])
+        self.data = self.data[perm]
+        self.labels = self.labels[perm]
