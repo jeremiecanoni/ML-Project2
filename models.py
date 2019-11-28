@@ -43,7 +43,7 @@ class W2VGenerator(keras.utils.Sequence):
 
     def __init__(self, data_names, labels_names, batch_size, n_samples_tot, shuffle=True):
         super(W2VGenerator, self).__init__()
-
+        print("In __init__ function", flush=True)
         self.data_names = np.asarray(data_names)
         self.labels_names = np.asarray(labels_names)
         self.batch_size = batch_size
@@ -53,7 +53,7 @@ class W2VGenerator(keras.utils.Sequence):
         if len(data_names) < 1 or len(self.labels_names) < 1:
             raise "Wrong number of files"
         else:
-
+            print("Loading File in init, self.count =", self.count, flush=True)
             tmp = np.load(self.data_names[self.count], allow_pickle=True)
             self.data = tmp['arr_0']
             tmp.close()
@@ -65,15 +65,12 @@ class W2VGenerator(keras.utils.Sequence):
         self.shuffle = shuffle
         self.ind = 0
 
-
     def __len__(self):
+        out = int(self.n_samples_tot//self.batch_size)
+        return out
 
-        #return (self.data_names.shape[0] - 1) * self.n_samples//self.batch_size \
-        #  + (self.n_samples_tot - self.n_samples_tot//self.data_names.shape[0])//self.batch_size
-        return int(self.n_samples_tot//self.batch_size)
 
     def __getitem__(self, idx):
-
         if self.ind < self.n_batches - 1:
             indexes = self.indexes[self.ind * self.batch_size: (self.ind + 1) * self.batch_size]
             self.ind = self.ind + 1
@@ -87,7 +84,9 @@ class W2VGenerator(keras.utils.Sequence):
             batch_x = self.data[indexes]
             batch_y = self.labels[indexes]
 
-            if self.count < len(self.data_names) - 1:
+            if self.count < len(self.data_names):
+                print("\nself.count =", self.count)
+                print("Opening new file", flush=True)
                 tmp = np.load(self.data_names[self.count], allow_pickle=True)
                 self.data = tmp['arr_0']
                 tmp.close()
@@ -98,7 +97,6 @@ class W2VGenerator(keras.utils.Sequence):
                 self.data = self.data[perm]
                 self.labels = self.labels[perm]
 
-
             self.n_samples = self.data.shape[0]
             self.n_batches = self.data.shape[0] // self.batch_size
             self.indexes = np.arange(self.n_samples)
@@ -108,9 +106,12 @@ class W2VGenerator(keras.utils.Sequence):
         return np.array(batch_x), np.array(batch_y)
 
     def on_epoch_end(self):
+        print("\nEpochs end", flush=True)
         # Updates indexes after each epoch
         samples_idx = np.arange(self.data_names.shape[0])
         self.count = 0
+
+        print("self.count set to 0\n", flush=True)
 
         if self.shuffle:
             np.random.shuffle(samples_idx)

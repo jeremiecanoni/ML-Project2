@@ -11,6 +11,8 @@ import gensim
 from symspellpy.symspellpy import SymSpell
 from models import *
 from methods import *
+from keras.callbacks import ModelCheckpoint
+from keras.models import load_model
 
 
 # Get number of cores to use
@@ -35,14 +37,14 @@ tf.config.threading.get_inter_op_parallelism_threads(), flush=True)
 x_test_ai = np.load('converted_tweets/x_test_nf.npy')
 
 # Get size of data 
-n_files = 5
+n_files = 3
 y_text = np.load('Processed_Data/labels_train_nf.npy')
-len_tot = y_text.shape[0]
+len_tot = (y_text.shape[0]//5)*n_files
 
 
 # Define neural network parameters
-filters, kernel_size, batch_size = 600, 5, 200
-epochs, hidden_dims = 3, 250
+filters, kernel_size, batch_size = 30, 3, 200
+epochs, hidden_dims = 4, 50
 
 
 #x, y_train, x_test, y_test = split_data(x, labels, ratio=0.8)
@@ -54,7 +56,8 @@ files_names = [path_save + 'x_train_' + full + '_batch_' + str(b) + '.npz' for b
 labels_names = [path_save + 'labels_' + full + '_batch_' + str(b) + '.npy' for b in range(n_files-1)]
 
 print("Initializing generators", flush=True)
-train_batch_generator = W2VGenerator(files_names, labels_names, batch_size=batch_size, n_samples_tot=len_tot//n_files*(n_files-1))
+train_batch_generator = W2VGenerator(files_names, labels_names, batch_size=batch_size,
+                                     n_samples_tot=(len_tot//n_files)*(n_files-1))
 #test_batch_generator = W2VGenerator([path_save + 'x_train_' + full + '_batch_' + str(n_files-1) + '.npz'],
 #                                    [path_save + 'labels_' + full + '_batch_' + str(n_files-1) + '.npy'],
 #                                    batch_size=batch_size,
@@ -73,22 +76,27 @@ model = build_model(filters, kernel_size, hidden_dims, len_max_tweet)
 #model.fit(x, y_train, batch_size=batch_size,
 #          epochs=epochs, validation_data=(x_test, y_test))
 
+checkpoint = ModelCheckpoint("best_model.hdf5", monitor='val_accuracy', verbose=1,
+    save_best_only=True, mode='auto', period=1)
 
 model.fit_generator(generator=train_batch_generator,
-                    steps_per_epoch=(len_tot//n_files*(n_files-1))// batch_size,
+                    steps_per_epoch=(len_tot//n_files*(n_files-1))//batch_size,
                     epochs=epochs,
                     verbose=1,
-                    validation_data=(x_val,y_val),
+                    validation_data=(x_val, y_val),
+                    callbacks=[checkpoint],
                     shuffle=True)
 
 
-y_pred = np.ndarray.flatten(model.predict_classes(x_test_ai, batch_size=batch_size))
+best_model = load_model('best_model.hdf5')
+
+y_pred = np.ndarray.flatten(best_model.predict_classes(x_test_ai, batch_size=batch_size))
 
 # Replace for submission
 y_pred = np.where(y_pred == 0, -1, y_pred)
 
 path_csv = 'Subs/'
-csv_name = 'sub_' + 'tf_e' + str(epochs) + '_f' + str(filters) + '_bs' + str(batch_size) \
+csv_name = 'sub_' + 'tf_e' + str(epochs) + '_nf' + str(filters) + '_bs' + str(batch_size) \
            + '_hd' + str(hidden_dims) + '_ks' + str(kernel_size)
 
 create_csv_submission(y_pred, path_csv + csv_name + '.csv')
