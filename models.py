@@ -4,7 +4,7 @@ import keras
 from keras.preprocessing import sequence
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
-from keras.layers import Conv1D, GlobalMaxPooling1D
+from keras.layers import Conv1D, GlobalMaxPooling1D, MaxPooling1D
 
 
 def build_model(filters, kernel_size, hidden_dims, len_max_tweet):
@@ -23,6 +23,73 @@ def build_model(filters, kernel_size, hidden_dims, len_max_tweet):
                   metrics=['accuracy'])
 
     return model
+
+
+def build_model_2(filters1, kernel_size1, filters2, kernel_size2, hidden_dims, len_max_tweet):
+
+    model = Sequential([
+        Conv1D(filters1, kernel_size1, padding='valid', activation='relu', strides=1, input_shape=(len_max_tweet, 400)),
+        MaxPooling1D(),
+        Conv1D(filters2, kernel_size2, padding='valid', activation='relu', strides=1),
+        GlobalMaxPooling1D(),
+        Dense(hidden_dims),
+        Dropout(0.2),
+        Activation('relu'),
+        Dense(1, activation='sigmoid')]
+    )
+
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+
+    return model
+
+
+def build_model_3(filters1, kernel_size1, filters2, kernel_size2, hidden_dims, len_max_tweet):
+
+    model = Sequential([
+        Conv1D(filters1, kernel_size1, padding='valid', activation='relu', strides=1, input_shape=(len_max_tweet, 400)),
+        MaxPooling1D(),
+        Conv1D(filters2, kernel_size2, padding='valid', activation='relu', strides=1),
+        GlobalMaxPooling1D(),
+        Dense(2*hidden_dims),
+        Dropout(0.2),
+        Activation('relu'),
+        Dense(hidden_dims),
+        Dropout(0.2),
+        Activation('relu'),
+        Dense(1, activation='sigmoid')]
+    )
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+
+    return model
+
+
+def build_model_emb(emb_w2v,filters, kernel_size, hidden_dims, len_max_tweet, learning_rate):
+
+    model = Sequential([
+        emb_w2v,
+        Dropout(0.2),
+        Conv1D(filters, kernel_size, padding='valid', activation='relu', strides=1, input_shape=(len_max_tweet, 400)),
+        GlobalMaxPooling1D(),
+        Dense(hidden_dims),
+        Dropout(0.2),
+        Activation('relu'),
+        Dense(1, activation='sigmoid')]
+    )
+
+    adam = keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=False)
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer=adam,
+                  metrics=['accuracy'])
+
+    return model
+
 
 
 def convert_w2v(model_wv, data, len_max_tweet):
@@ -69,7 +136,6 @@ class W2VGenerator(keras.utils.Sequence):
         out = int(self.n_samples_tot//self.batch_size)
         return out
 
-
     def __getitem__(self, idx):
         if self.ind < self.n_batches - 1:
             indexes = self.indexes[self.ind * self.batch_size: (self.ind + 1) * self.batch_size]
@@ -85,8 +151,8 @@ class W2VGenerator(keras.utils.Sequence):
             batch_y = self.labels[indexes]
 
             if self.count < len(self.data_names):
-                print("\nself.count =", self.count)
-                print("Opening new file", flush=True)
+                print("\nOpening new file", flush=True)
+                print("Current file", self.data_names[self.count])
                 tmp = np.load(self.data_names[self.count], allow_pickle=True)
                 self.data = tmp['arr_0']
                 tmp.close()
@@ -118,7 +184,7 @@ class W2VGenerator(keras.utils.Sequence):
 
         self.data_names = self.data_names[samples_idx]
         self.labels_names = self.labels_names[samples_idx]
-
+        print("\nCurrent File", self.data_names[self.count])
         tmp = np.load(self.data_names[self.count], allow_pickle=True)
         self.data = tmp['arr_0']
         tmp.close()

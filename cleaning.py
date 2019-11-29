@@ -69,11 +69,8 @@ df_pos = pd.DataFrame(pd.unique(df_pos[0]).T, columns=['tweet'])
 df_pos['sentiment'] = 1
 print(df_pos.shape)
 
-
 df = pd.concat([df_neg, df_pos])
 
-df = df[0:500]
-df_test = df_test[0:500]
 
 
 sym_spell = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
@@ -95,7 +92,15 @@ stop_words.append("im")
 stop_words.append('user')
 stop_words.append('urls')
 
-stop_list = stop_words
+
+stop_words_2 = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'of', 'at', 'by', 'then', 'once', 'here', 'there', 's', 't', 'can', 'don', "don't", 'should', "should've", 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't", 'u', 'ur', "i'm", 'im', 'user', 'urls']
+not_remove = ['when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'what', 'which', 'who', 'whom', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'just', 'now']
+
+stop_words_3 = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'of', 'at', 'by', 'then', 'once', 'here', 'there', 's', 't', 'd', 'll', 'm', 'o', 're', 've', 'y', 'u', 'ur', "i'm", 'im', 'user', 'urls']
+
+
+# Choose which stop list to use
+stop_list = stop_words_3
 
 
 def correct_spelling_p(tweet):
@@ -103,19 +108,21 @@ def correct_spelling_p(tweet):
     # splitting & merging)
     # max edit distance per lookup (per single word, not per whole input string)
     
-    tweet = re.sub(r'\d+|\\','',tweet) #Remove any numbers, '\' from the tweets
+    tweet = re.sub(r'\d+|\\', '', tweet) #Remove any numbers, '\' from the tweets
     # Replace multiple spaces by one space
-    tweet = re.sub(' +',' ', tweet)
+    tweet = re.sub(' +', ' ', tweet)
     result = sym_spell.lookup_compound(tweet, max_edit_distance=2)
     return result[0].term
 
 
 def stop_clean(tweet):
     tweet = tweet.lower() #To remove
-    tweet = re.sub(r"\w+n't\s?",'not ',tweet) #Replace all word finishing by n't by not
-    to_not = ['havent','doesnt','cant','dont','shouldnt','arent','couldnt',"didnt","hadnt","mightnt","mustnt","neednt","wasnt","wont","wouldnt"]
+    """tweet = re.sub(r"\w+n't\s?", 'not ', tweet) #Replace all word finishing by n't by not
+    to_not = ['havent', 'doesnt', 'cant', 'dont', 'shouldnt', 'arent', 'couldnt', "didnt", "hadnt", "mightnt",
+              "mustnt", "neednt", "wasnt", "wont", "wouldnt", 'neednt', 'isnt', 'werent']
     for word in to_not:
         tweet = re.sub(r'\b' + word + r'\b', 'not', tweet)
+    """
     tweet = ' '.join(word for word in tweet.split() if word not in stop_list) #Remove the stop words of the tweet
     return tweet
 
@@ -167,8 +174,8 @@ data_test_pr = np.asarray([text_to_word_sequence(text, filters='') for text in d
 
 
 path_save = "Processed_Data/"
-np.save(path_save + "labels_train_" + full, df['sentiment'].values)
-np.save(path_save + "data_train_pr_" + full, data_train_pr)
-np.save(path_save + "data_test_pr", data_test_pr)
+np.save(path_save + "labels_train_" + full + "_sl3", df['sentiment'].values)
+np.save(path_save + "data_train_pr_" + full + "_sl3", data_train_pr)
+np.save(path_save + "data_test_pr" + "_sl3", data_test_pr)
 
 

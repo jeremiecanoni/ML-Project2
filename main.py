@@ -43,7 +43,7 @@ len_tot = (y_text.shape[0]//5)*n_files
 
 
 # Define neural network parameters
-filters, kernel_size, batch_size = 30, 3, 200
+filters, kernel_size, batch_size = 500, 3, 200
 epochs, hidden_dims = 4, 50
 
 
