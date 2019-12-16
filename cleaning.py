@@ -2,11 +2,9 @@ import numpy as np
 import pandas as pd
 import time
 import nltk
-from nltk.corpus import stopwords
 import re
 from symspellpy.symspellpy import SymSpell
 from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize, RegexpTokenizer
 import pkg_resources
 from nltk.corpus import wordnet
 from multiprocessing import Pool
@@ -38,7 +36,7 @@ elif full=='nf':
     path_neg = 'data/twitter-datasets/train_neg.txt'
 
 else:
-    raise "Not valid full, should be 'f' or 'nf'"
+    raise ValueError("Not valid full, should be 'f' or 'nf'")
 
 path_test = 'data/twitter-datasets/test_data.txt'
 
