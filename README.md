@@ -13,7 +13,7 @@ In order to be able to run the code, you will need the following libraries :
 * nltk `pip install nltk`
 * gensim `pip install gensim`
 
-Some additional downloads are required for nltk and Symspell. Note that due to the computational cost of the whole processing, the notebooks have been executed using google colaboratory.
+Some additional downloads are required for nltk and Symspell. Note that due to the computational cost of the whole processing, the notebooks have been executed using Google Colaboratory.
 
 ## Usage
 
@@ -25,7 +25,7 @@ The following files are creating when running `cleaning.py`:
 * `data_test_pr_f_sl5.npy`
 * `labels_train_f_sl5.npy`
 
-Concerning the generation of the raw dataset (please refer to the report), you will need to call the function '''python raw_data(path_g, full)''' contained in the file `helpers.py`. where `path`
+Concerning the generation of the raw dataset (please refer to the report), you will need to call the function `get_raw_data(path_g, full)` contained in the file `helpers.py`, where `path` is the Google Drive path in Google Colaboratory and `full`=. 
 
 ### Hyper-parameter tuning
 
