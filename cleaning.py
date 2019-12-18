@@ -25,7 +25,7 @@ else:
     print("By default, ncpu = ", ncpu)
 
 # f for full dataset, nf for small dataset (not full)
-full = 'nf'
+full = 'f'
 
 if full=='f':
     path_pos = 'data/twitter-datasets/train_pos_full.txt'
