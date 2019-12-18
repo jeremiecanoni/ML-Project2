@@ -13,5 +13,13 @@ In order to be able to run the code, you will need the following libraries :
 * nltk `pip install nltk`
 * gensim `pip install gensim`
 
+Some additional downloads are required for nltk and Symspell.
 
-## How to run the code
+## Usage
+
+### Pre-processing
+
+You will find in the file `cleaning.py` all the pre-processing methods explained in the report. This file generates three `.npy` files  with pre-processed data : the training dataset and its labels and the test dataset.
+
+### 
+
