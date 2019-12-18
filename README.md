@@ -1,4 +1,4 @@
-# ML-Project2
+# Machine Learning Project : Text classification
 
 Authors : Damien Ronssin, Jérémie Canoni--Meynet, Benjamin Pedrotti
 
@@ -25,16 +25,14 @@ The following files are creating when running `cleaning.py`:
 * `data_test_pr_f_sl5.npy`
 * `labels_train_f_sl5.npy`
 
-Concerning the generation of the raw dataset (please refer to the report), you will need to call the function `get_raw_data(path_g, full)` contained in the file `helpers.py`, where `path` is the Google Drive path in Google Colaboratory and `full`=. 
+Concerning the generation of the raw dataset (please refer to the report), you will need to call the function `get_raw_data(path_g, full)` contained in the file `helpers.py`, where `path_g` is the Google Drive path in Google Colaboratory and `full`='f' for full dataset and 'nf' for non full dataset. This function will return the raw training dataset and its labels as well as the test dataset. 
 
 ### Hyper-parameter tuning
 
 In the notebooks `CNN_Tuning.ipynb` and `LSTM_Tuning.ipynb` you will find the hyper-parameter tuning for two different deep learning architectures : convolutional network and LSTM network respectively.
 
 
-
-
-### Reproducibilty 
+### Reproducibility 
 
 You will be able to reproduce our best results by running the notebook `CNN.ipynb`. 
 
