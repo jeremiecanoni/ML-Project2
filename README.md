@@ -17,6 +17,10 @@ Some additional downloads are required for nltk and Symspell. Note that due to t
 
 ## Usage
 
+### Data
+
+We did not put the original data on the repository. You will need to locate them in a folder called `data`.
+
 ### Pre-processing
 
 You will find in the file `cleaning.py` all the pre-processing methods explained in the report. This file generates three `.npy` files  with pre-processed data : the training dataset and its labels and the test dataset.
