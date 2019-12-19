@@ -4,6 +4,43 @@ import pandas as pd
 from tensorflow.keras.preprocessing.text import text_to_word_sequence
 
 
+def load_data_unique(data, sent):
+    """
+    Load the data (the tweets), put it in a Pandas DataFrame, add the labels, remove the last empty row and remove all
+    the duplicates).
+
+    :param data: Tweeter dataset
+    :param sent: Label to put to the data (either 1 or 0)
+    :return: Pandas dataframe containing the tweets and their respective labels.
+    """
+
+    df = pd.DataFrame(data)
+    df.drop(df.tail(1).index, inplace=True)
+    df = pd.DataFrame(pd.unique(df[0]).T, columns=['tweet'])
+    df['sentiment'] = sent
+    print(df.shape)
+    return df
+
+
+def load_data(path_pos, path_neg):
+    """
+    Load the positive and negative tweeter dataset, transform into pandas DataFrame using load_data_unique et concatenate them.
+
+    :param path_pos: Path for the positive tweeter dataset
+    :param path_neg: Path for the negative tweeter dataset
+    :return: Pandas dataframe containing the tweets and their respective labels.
+    """
+
+    f_n = open(path_neg, "r", encoding="utf8")
+    data_neg = f_n.read().split('\n')
+    f_p = open(path_pos, "r", encoding="utf8")
+    data_pos = f_p.read().split('\n')
+    data = pd.concat([load_data_unique(data_neg, 0), load_data_unique(data_pos, 1)])
+    print(data.shape)
+
+    return data.sample(data.shape[0])
+
+
 def get_raw_data(path_g, full):
     """
     Generate raw data without punctuation
