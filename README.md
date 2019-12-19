@@ -40,5 +40,5 @@ In the notebooks `CNN_Tuning.ipynb` and `LSTM_Tuning.ipynb` you will find the hy
 
 ### Reproducibility 
 
-You will be able to reproduce our best results by running the notebook `CNN.ipynb`. 
+You will be able to reproduce our best results by running the notebook `CNN.ipynb`. It will generate a sumbmission file named `sub_best.csv`.
 
