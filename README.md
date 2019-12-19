@@ -15,6 +15,8 @@ In order to be able to run the code, you will need the following libraries :
 
 Some additional downloads are required for nltk and Symspell. Note that due to the computational cost of the whole processing, the notebooks have been executed using Google Colaboratory.
 
+To be able to run the notebooks `LSTM.ipynb` and `LSTM_Tuning.ipynb` you will need to download the pre-trained GloVe models which can be found [here](https://nlp.stanford.edu/projects/glove/) in the section 'Download pre-trained word vectors'. The models used were in 'glove.twitter.27B.zip'.
+
 ## Usage
 
 ### Data
